@@ -1,0 +1,7 @@
+com/demo/mavenproject1/config/Producers.class
+client/NewInterface.class
+servlets/NewServlet.class
+com/demo/mavenproject1/config/CrossOriginResourceSharingFilter.class
+com/demo/mavenproject1/config/BootStrap.class
+com/demo/mavenproject1/service/HealthCheckService.class
+com/demo/mavenproject1/service/ExampleService.class

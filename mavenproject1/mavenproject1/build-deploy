@@ -1,0 +1,21 @@
+#!/bin/sh
+#deploy="false"
+deploy="true"
+
+image=mavenproject1
+version=1.0-SNAPSHOT
+latest=true
+
+#OPTIONS="--no-cache --force-rm"
+#OPTIONS="--no-cache"
+#OPTIONS="--force-rm"
+OPTIONS=""
+
+docker build ${OPTIONS} -t ok/${image}:1.0-SNAPSHOT .
+if [ "$?" -eq 0 ] && [ ${deploy} == "true" ]; then
+    docker push ok/${image}:1.0-SNAPSHOT
+    if [ "$latest" == "true" ]; then
+        docker tag ok/${image}:1.0-SNAPSHOT ok/${image}:latest
+        docker push ok/${image}:latest
+    fi
+fi

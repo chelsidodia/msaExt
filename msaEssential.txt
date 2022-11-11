@@ -1,0 +1,423 @@
+Hello,
+Having some steps you can follow, that will guide you to create and run 2 microservices application with mysql database integrated. 
+You Need 4 files Initially
+	payara-micro-5.2022.2.jar
+	mysql-connector-java-5.1.47-bin.jar
+	jwtenizr.jar
+	domain.xml
+
+Setup for JWT using jwtenizr.jar
+1.	Run the following command to execute jar file:
+java -jar jwtenizr.jar
+2.	Update “jwt-token.json” file as per need (Only highlighted values can be changed):
+Eg. {"iss":"airhacks","jti":"42","sub":"msa","upn":"msa","groups":["Patient","User"]}
+3.	Run step 1 again, so it will update the token which is stored in the file “token.jwt”
+
+4.	Create New Project (MSAApp) 
+a.	-> Java with maven 
+i.	-> project from Archetype
+1.	Select : jakartaee8-payara-microprofile-archetype
+b.	Same for second app
+5.	Do changes in pom.xml
+<dependency>
+            <groupId>org.eclipse.microprofile</groupId>
+            <artifactId>microprofile</artifactId>
+            <version>3.2</version>
+            <type>pom</type>
+            <scope>provided</scope>
+</dependency>
+
+
+<maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+
+
+
+Create database- in phpMyAdmin
+Create pool in payara server console
+In jdbc connection pools
+New-> pool name -> resource type: javax.sql.DataSource -> database driver vender: MySql next -> properties: 
+databaseName: demo
+ServerName: localhost
+user: root
+password: root
+url: jdbc:mysql://localhost:3306/demo?useSSL=false
+driver: com.mysql.cj.jdbc.Driver
+driverClass: com.mysql.cj.jdbc.Driver
+portNumber: 3306
+
+create database connection in mysql
+
+project->properties->run->payara server select
+6.	Create persistence unit
+7.	Create Entity Classes from database. (Model)
+8.	Create class for business logic with entityManager. (Beans) name as Doc
+New java class-> name Doc
+
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/J2EE/EJB30/StatelessEjbClass.java to edit this template
+ */
+package Beans;
+
+import Model.DoctorAppointment;
+import java.util.Collection;
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Named;
+import javax.persistence.EntityManager;
+import javax.persistence.Persistence;
+
+/**
+ *
+ * @author kruti
+ */
+@Named
+@ApplicationScoped
+public class Doc {
+    
+    EntityManager em;
+    Collection<DoctorAppointment> doctorAppointment;
+
+    public Doc() {
+        em = Persistence.createEntityManagerFactory("com.mycompany_DocAvailabilityApp_war_1.0-SNAPSHOTPU").createEntityManager();
+    }
+
+    public EntityManager getEm() {
+        return em;
+    }
+
+    public void setEm(EntityManager em) {
+        this.em = em;
+    }
+
+    public Collection<DoctorAppointment> getDoctorAppointment() {
+        return doctorAppointment;
+    }
+
+    public void setDoctorAppointment(Collection<DoctorAppointment> doctorAppointment) {
+        this.doctorAppointment = doctorAppointment;
+    }
+    
+    public Collection<DoctorAppointment> getDoctorAvailability(String Specialization){
+        doctorAppointment=(Collection<DoctorAppointment>)em.createNamedQuery("DoctorAppointment.findAllBySpecialization").setParameter("specialization",Specialization ).getResultList();
+        return doctorAppointment;
+    }
+    
+    // Add business logic below. (Right-click in editor and choose
+    // "Insert Code > Add Business Method")
+}
+
+Change pu name in java class
+
+9.	Make Changes in Example Service means Add your rest resources in that file. (Path) @rolesallowed and method write
+
+Sir- @Path("/example")
+public class ExampleService {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String get() {
+        return "Hello, world! of Micro Profile from Trial App";
+    }
+
+   k-
+
+package com.mycompany.docavailabilityapp.service;
+
+import Beans.Doc;
+import Model.DoctorAppointment;
+import java.util.Collection;
+import javax.annotation.security.RolesAllowed;
+import javax.inject.Inject;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
+@Path("/doctor_avalilability/{specialization}")
+//@Path("/example")
+public class ExampleService {
+    
+    @Inject Doc docService;
+    
+    @RolesAllowed("Patient")
+    //@Path("/doctor_avalilability/{specialization}")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Collection<DoctorAppointment> getDoctorAvailability(@PathParam("specialization") String Specialization){
+        return docService.getDoctorAvailability(Specialization);
+    }
+
+//    @GET
+//    //@Produces(MediaType.APPLICATION_JSON)
+//    public String get(){
+//        return "Hello world";
+//    }
+}
+
+10.	Add 2 lines in “Bootstrap.java”
+@LoginConfig(authMethod="MP-JWT")
+@DeclareRoles({"User","Patient"})
+@SuppressWarnings({"EmptyClass", "SuppressionAnnotation"})
+@ApplicationPath("rest")
+public class BootStrap extends javax.ws.rs.core.Application {
+}
+
+k-
+
+package com.mycompany.docavailabilityapp.config;
+import javax.annotation.security.DeclareRoles;
+import javax.ws.rs.ApplicationPath;
+import org.eclipse.microprofile.auth.LoginConfig;
+
+@LoginConfig(authMethod="MP-JWT")
+@DeclareRoles({"User","Patient"})
+@SuppressWarnings({"EmptyClass", "SuppressionAnnotation"})
+@ApplicationPath("rest")
+public class BootStrap extends javax.ws.rs.core.Application {
+}
+
+11.	Add Folder “META-INF” at location below:
+a.	Other Sources -> src/main/resources -> META-INF
+b.	Inside META-INF, create one properties file named “microprofile-config.properties”
+c.	Inside that file copy paste issuer and public key from “microprofile-config.properties” which is generated after executing jwt jar file.
+
+add Issuer and public key copy from microprofile-config
+
+mp.jwt.verify.issuer=airhacks
+mp.jwt.verify.publickey=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt+oXGa1mlxXS7Fsfx7hFvmz+uwERlOYTu0kVoLjH/rC1v4OsICdIAjCUh4XgLUNX7C+TK6GBKWS7xIPWabC+jcxLdUEj1XRJrTqtQvC1AUaowXCeI16IZycYvU0de3+alBtE3mcF9GKKBiHCmj/7pW0mDwCPky2a0wkW3xWzMb46Q9wsjdZAdzbqDTzJheyC19H/kY6+AAPgGo0Ov6gGMzKWuVEmQQ3yZyAw3Wx+d/osE3xV1kxCL0isV7jLX1kZCaCGIUWmaGM7H4O68PGHP39DKOw3PyvWTgKZQEua0EZvdAvCYchC/KT3S0MuiZJIpfU+RAyzvrZiqjs+sK6VRwIDAQAB
+
+
+
+12.	Add code into example service
+Now you MSAApp project is done.
+
+
+1.  Create New Project (MSAClient) 
+a.	-> Java with maven 
+i.	-> project from Archetype
+Select : jakartaee8-payara-microprofile-archetype
+2. Do changes in pom.xml
+              <dependency>
+            <groupId>org.eclipse.microprofile</groupId>
+            <artifactId>microprofile</artifactId>
+            <version>3.2</version>
+            <type>pom</type>
+            <scope>provided</scope>
+</dependency>
+
+
+<maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+
+3. Copy Paste Model file (entity classes) from your “MSAApp” Project into source packages as model into that
+No changes in bootstrap or exampleservice, only in resource
+4. Just create Client Interface (client -> MSAClient) package: client  copy paste whole code
+
+sir-
+@RegisterRestClient(baseUri = "http://localhost:8080/TrialMicroApp/rest/example&quot;)
+public interface ExampleClient {
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String get();
+}
+
+k-
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Interface.java to edit this template
+ */
+package client;
+
+import Model.DoctorAppointment;
+import java.util.Collection;
+import javax.annotation.security.RolesAllowed;
+import javax.enterprise.context.ApplicationScoped;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+/**
+ *
+ * @author kruti
+ */
+@RegisterRestClient(configKey = "myclient")
+@ApplicationScoped
+ //@Named
+@Path("/doctor_avalilability/{specialization}")
+public interface MSAClient {
+    @GET
+    @ClientHeaderParam(name="authorization", value="{generateJWTToken}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Collection<DoctorAppointment> getDoctorAvailability(@PathParam("specialization") String Specialization);
+   
+    default String generateJWTToken()
+    {
+         Config config = ConfigProvider.getConfig();
+         String token ="Bearer "+config.getValue("jwt-string", String.class) ;
+         System.out.println("Token = "+token);
+         return token;
+    }
+}
+
+
+5. Now create Servlet (client -> TestClientServlet)
+k-
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
+ */
+package client;
+
+import Model.DoctorAppointment;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Collection;
+import javax.inject.Inject;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
+/**
+ *
+ * @author kruti
+ */
+@WebServlet(name = "TestClientServlet", urlPatterns = {"/TestClientServlet"})
+public class TestClientServlet extends HttpServlet {
+
+    @Inject @RestClient MSAClient msacl; 
+    Collection<DoctorAppointment> docApps;
+    
+    /**
+     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
+     * methods.
+     *
+     * @param request servlet request
+     * @param response servlet response
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        response.setContentType("text/html;charset=UTF-8");
+        try ( PrintWriter out = response.getWriter()) {
+            /* TODO output your page here. You may use following sample code. */
+            out.println("<!DOCTYPE html>");
+            out.println("<html>");
+            out.println("<head>");
+            out.println("<title>Servlet TestClientServlet</title>");            
+            out.println("</head>");
+            out.println("<body>");
+            
+            try{
+                docApps=msacl.getDoctorAvailability("Cardiologist");
+            
+                out.println("<h1>Available Doctor's</h1><br/><br/><br/>");
+                out.println("<table><tr><td>DocName</td><td>Specialist</td><td>Address</td><td>FromTime</td><td>ToTime</td></tr>");
+                for(DoctorAppointment dapp:docApps){
+                    out.println("<tr><td>"+dapp.getDocName()+"</td><td>"+dapp.getSpecialization()+"</td><td>"+dapp.getAddress()+"</td><td>"+dapp.getFromTime()+"</td><td>"+dapp.getToTime()+"</td></tr>");
+                }
+                out.println("<table>");
+            }catch(Exception e){
+                out.println("Error Error Error");
+            }
+            
+            
+            out.println("</body>");
+            out.println("</html>");
+        }
+    }
+
+    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
+    /**
+     * Handles the HTTP <code>GET</code> method.
+     *
+     * @param request servlet request
+     * @param response servlet response
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        processRequest(request, response);
+    }
+
+    /**
+     * Handles the HTTP <code>POST</code> method.
+     *
+     * @param request servlet request
+     * @param response servlet response
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        processRequest(request, response);
+    }
+
+    /**
+     * Returns a short description of the servlet.
+     *
+     * @return a String containing servlet description
+     */
+    @Override
+    public String getServletInfo() {
+        return "Short description";
+    }// </editor-fold>
+
+}
+
+6. SAME way as we done in “MSAApp”, create properties file inside META-INF 
+	And you can mention rest url for connecting to “MSAApp” (Remember port name and use it            for deploying MSAApp using payara micro)
+	And copy paste jwt-token value from generated “token.jwt” file.
+Check it in kruti’s code and add  url and token port:8085, and change /sourceprojectname/
+ 
+myclient/mp-rest/url=http://localhost:8085/DocAvailabilityApp/rest
+jwt-string = eyJraWQiOiJqd3Qua2V5IiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJtc2EiLCJ1cG4iOiJtc2EiLCJhdXRoX3RpbWUiOjE2NjMyNjg2MTUsImlzcyI6ImFpcmhhY2tzIiwiZ3JvdXBzIjpbIlBhdGllbnQiLCJVc2VyIl0sImV4cCI6MTY2MzM2ODYxNSwiaWF0IjoxNjYzMjY4NjE1LCJqdGkiOiI0MiJ9.IG3QoQibOKnPbEBs3EMgtGwdq9-m4mKFA0copuUbCQevRr-YtoPk55KdMHloBwPoeHzjdPo0GO4db_phlIN8rnqdR-odGPDopj7TESvTnguq5iwl5xNCrBfenbBNEhTIQDcNZvHdFgorUriPBNAEs6Ehov-hK7ju5EfSdKQ9CbXzJ1HXEayJhmjqFoTg3aj8EPEH9NtdmGe9I_rQ4UU7dB4XZZs8fuE4FQkN1j-yKaiL6yBIC07dMBx9gvl_y8_c0V8qFv5fZciOCp6HsVNL8516zyRK84i-oFSvmAnUDLk1y3OyaLIXPw4RQZDac0YeFy-u6o_vm3QcV8xRhBxwSw
+
+Now you MSAClient project is done.
+
+7. Do Changes in “domain.xml” file (eg. Db related username, password, port) (Mention your jndi pool name)
+
+line:60 jdbc-connection-pool name="testpool">
+line 74: pool-name="testpool" jndi-name="jdbc/testpool"
+line 83: <resource-ref="jdbc/testpool"
+Pool name, jdbc, port, total 4 places pool name and jndi name
+
+Connector file: 5.0.8
+Run both files using below 2 commands (Use 2 terminals)
+
+a)	java -jar payara-micro-5.2022.2.jar –deploy  MSAApp/artifact/MSAApp.war --port 8085 --addlibs mysql-connector-java-5.1.47-bin.jar --domainconfig domain.xml
+
+b)	java -jar payara-micro-5.2022.2.jar –deploy  MSAClient/artifact/MSAClient.war --port 8087 --addlibs mysql-connector-java-5.1.47-bin.jar --domainconfig domain.xml
+
+
+Url for running DocFront App : http://localhost:8087/DocFrontApp(project name)/TestClientServlet
+
+postman:
+http://localhost:8085/demoSource/rest/doctor_availability/Cardiologist
+headers:
+key:
+Authorization: Bearer space token
+
+
+Take code for imports and java class
+
+
+
+

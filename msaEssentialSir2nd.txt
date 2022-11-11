@@ -1,0 +1,90 @@
+Securing Application with JWT
+
+-- Generating jwt token by a ready application by airhacks
+we have jwtenizr.jar
+execute the jar file as
+java -jar JWTenizer.jar
+This will generate following files
+- `jwtenizr-config.json` with public, private key and target folder of `microprofile-config.properties`
+- `jwt-token.json`: with [Minimum MP-JWT Required Claims](https://www.eclipse.org/community/eclipse_newsletter/2017/september/article2.php), a sample principal and a few groups
+- `token.jwt`: with information loaded from: `jwt-token.json` and can be used as input for automated  system tests
+- `microprofile-config.properties` comprising the public key an the issuer: copy to your `WAR/src/main/resources/META-INF`
+- `curl` command: with `Authorization` header and included token:
+
+microprofile-config.properties will have following content
+mp.jwt.verify.issuer=airhacks
+mp.jwt.verify.publickey=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAo6K9nNVcU4kTsW0IXP/xrJVyQe4AwB2zzLNvYwfjo8Tt6Y5NpPIQOna7cRFQ4aI7xDKkVEYPU3XIN/AlVR2JfNvdbWnEJlFxv0oUJDJFgqHtcZph9PTwZSqmNqlpjrb+b3CKIDBcMtq8djSrSUBqCRasL+Z4yRr/4KfbTWxKx8sXMAFyEzF4BZ/7/XBnK0kQbvlrsT0kKYd7VPngQ7P3aaV/a+w1VkX2z/oPQKY2zMtNHe0evVYfoeK9l/tdq9WRvwgFQ7QlUELGwx7+eDwuXlMLg3xWnxWieiHlZknoMEH9ijg41QKusktZoVcOKgrv6EcQ67lik59ptwHGfVVa6wIDAQAB
+
+just copy and paste it into META-INF/microprofile-config.properties file in resource application
+
+A - In resource Application
+
+1. In the resource application Look for BootStrap or main class extending Application
+On the top of the class write
+@LoginConfig(authMethod = "MP-JWT")
+@DeclareRoles({"Admin","Supervisor"})
+@ApplicationPath("rest")
+public class BootStrap extends javax.ws.rs.core.Application {
+}
+
+2. In ExampleService  which is the resource to be invoked
+
+use RolesAllowed  annotation as follows
+
+    @GET
+    @RolesAllowed("Admin")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String get() {
+        return "Hello, world! of Micro Profile from Trial App";
+    }
+   
+   
+3. In microprofile-config.properties file
+have two more entries
+mp.jwt.verify.issuer=
+mp.jwt.verify.publickey=
+
+Based on your jwt you need to populate issuer and public key for which the token is generated. JWT is already encrypted by private key
+
+
+
+B- In client application
+
+Modify the client interface in following way
+
+@RegisterRestClient(configKey = "myclient1")
+public interface MyRestClient {
+    @GET
+    @ClientHeaderParam(name="authorization", value="{generateJWTToken}")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String get();
+   
+    default String generateJWTToken()
+    {
+        Config config = ConfigProvider.getConfig();
+         String token ="Bearer "+config.getValue("jwt-string", String.class) ;
+         System.out.println("Token = "+token);
+         return token;
+    }
+}
+
+
+
+In META-INF/microprofile-config.properties file
+have following entries
+jwt-string = <jwt token>
+
+
+while calling jwt-string will be picked up by generateJWTToken method with
+String token ="Bearer "+config.getValue("jwt-string", String.class) ;
+
+Based on your jwt you need to populate jwt-string with for which the token is generated
+
+Now In the invoke servlet when client will be injected and method will be called then jwt-string will go in client header which target application will recognize and get the Roles from token
+
+Run the projects using diferent terminal
+1. java -jar payara-micro-5.2022.2.jar --deploy MSAApp/artifact/MSAApp.war --port 8085
+2.java -jar payara-micro-5.2022.2.jar --deploy MSAClient/artifact/MSAClient.war --port 8087
+
+
+execute the client on browser as http://localhost:8087/MSAClient/ClientServlet

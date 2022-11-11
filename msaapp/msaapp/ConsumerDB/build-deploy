@@ -1,0 +1,21 @@
+#!/bin/sh
+#deploy="false"
+deploy="true"
+
+image=ConsumerDB
+version=1.0-SNAPSHOT
+latest=true
+
+#OPTIONS="--no-cache --force-rm"
+#OPTIONS="--no-cache"
+#OPTIONS="--force-rm"
+OPTIONS=""
+
+docker build ${OPTIONS} -t parmardhawaldocker/${image}:1.0-SNAPSHOT .
+if [ "$?" -eq 0 ] && [ ${deploy} == "true" ]; then
+    docker push parmardhawaldocker/${image}:1.0-SNAPSHOT
+    if [ "$latest" == "true" ]; then
+        docker tag parmardhawaldocker/${image}:1.0-SNAPSHOT parmardhawaldocker/${image}:latest
+        docker push parmardhawaldocker/${image}:latest
+    fi
+fi

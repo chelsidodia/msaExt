@@ -1,0 +1,8 @@
+entity\Students.class
+com\springcore\consumerdb\config\BootStrap.class
+com\springcore\consumerdb\config\Producers.class
+servlets\app.class
+com\springcore\consumerdb\service\HealthCheckService.class
+com\springcore\consumerdb\config\CrossOriginResourceSharingFilter.class
+com\springcore\consumerdb\service\ExampleService.class
+client\ApiInterface.class

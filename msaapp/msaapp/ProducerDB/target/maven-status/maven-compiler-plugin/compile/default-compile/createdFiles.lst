@@ -1,0 +1,8 @@
+com\springcore\producerdb\config\Producers.class
+entity\Students.class
+com\springcore\producerdb\config\CrossOriginResourceSharingFilter.class
+com\springcore\producerdb\config\BootStrap.class
+com\springcore\producerdb\service\HealthCheckService.class
+entity\Students_.class
+Models\DataModel.class
+com\springcore\producerdb\service\ExampleService.class

@@ -1,0 +1,8 @@
+com\mycompany\docavailabilityapp\config\CrossOriginResourceSharingFilter.class
+Beans\Doc.class
+Model\DoctorAppointment_.class
+com\mycompany\docavailabilityapp\config\BootStrap.class
+com\mycompany\docavailabilityapp\config\Producers.class
+com\mycompany\docavailabilityapp\service\ExampleService.class
+com\mycompany\docavailabilityapp\service\HealthCheckService.class
+Model\DoctorAppointment.class

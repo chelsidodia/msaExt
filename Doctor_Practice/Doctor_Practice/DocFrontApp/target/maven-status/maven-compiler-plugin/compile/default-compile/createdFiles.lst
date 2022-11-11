@@ -1,0 +1,8 @@
+com\mycompany\docfrontapp\config\Producers.class
+client\MSAClient.class
+com\mycompany\docfrontapp\service\HealthCheckService.class
+com\mycompany\docfrontapp\config\BootStrap.class
+com\mycompany\docfrontapp\service\ExampleService.class
+com\mycompany\docfrontapp\config\CrossOriginResourceSharingFilter.class
+client\TestClientServlet.class
+Model\DoctorAppointment.class
